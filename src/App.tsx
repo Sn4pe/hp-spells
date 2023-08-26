@@ -1,35 +1,67 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect, useState } from "react";
+import { HotKeys } from "react-hotkeys";
+import "./App.css";
+import { Spell } from "./types";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [spells, setSpells] = useState<Spell[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+
+  useEffect(() => {
+    fetch("https://hp-api.onrender.com/api/spells")
+      .then(res => res.json())
+      .then((data: Spell[]) => setSpells(data))
+      .catch(error => console.error("Error fetching spells:", error));
+  }, []);
+
+  const filteredSpells = spells.filter(spell =>
+    spell.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    spell.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const keyMap = {
+    FOCUS_SEARCH: "command+k",
+  };
+
+  const handlers = {
+    FOCUS_SEARCH: () => {
+      const searchInput = document.getElementById("searchInput");
+      searchInput ? searchInput.focus() : null;
+    },
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <HotKeys keyMap={keyMap} handlers={handlers}>
+      <main>
+        <h1>HP Spells</h1>
+        <div className="search-container">
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Search spells..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Spell Name</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredSpells.map(spell => (
+              <tr key={spell.id}>
+                <td>{spell.name}</td>
+                <td>{spell.description}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </main>
+    </HotKeys>
+  );
 }
 
-export default App
+export default App;
